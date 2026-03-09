@@ -1,0 +1,172 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/@prisma/client-metadata"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("METADATA_DB_URL")
+}
+
+
+// ============================================
+// AI CHATBOT (Global - Admin Managed)
+// ============================================
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum EmbeddingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum DocumentSourceType {
+  MANUAL
+  URL
+  FILE_UPLOAD
+}
+
+model ChatConversation {
+  id        String    @id @default(cuid())
+  userId    String?   @map("user_id")
+  sessionId String    @unique @map("session_id")
+  title     String?
+  source    String    @default("web")
+  metadata  Json?
+  isActive  Boolean   @default(true) @map("is_active")
+  startedAt DateTime  @default(now()) @map("started_at")
+  endedAt   DateTime? @map("ended_at")
+
+  messages ChatMessage[]
+
+  @@index([userId])
+  @@index([sessionId])
+  @@map("chat_conversations")
+}
+
+model ChatMessage {
+  id             String      @id @default(cuid())
+  conversationId String      @map("conversation_id")
+  userId         String?     @map("user_id")
+  role           MessageRole
+  content        String      @db.Text
+
+  embedding       String?  @db.Text
+  tokenCount      Int?     @map("token_count")
+  modelUsed       String?  @map("model_used")
+  retrievedChunks Json?    @map("retrieved_chunks")
+  latencyMs       Int?     @map("latency_ms")
+
+  isHelpful    Boolean?  @map("is_helpful")
+  feedbackText String?   @map("feedback_text")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([userId])
+  @@map("chat_messages")
+}
+
+model FaqContent {
+  id               String          @id @default(cuid())
+  category         String
+  question         String          @db.Text
+  answer           String          @db.Text
+  keywords         String[]
+  knowledgeBaseId  String?         @map("knowledge_base_id")
+  embeddingStatus  EmbeddingStatus @default(PENDING) @map("embedding_status")
+  pineconeVectorId String?         @map("pinecone_vector_id")
+  isActive         Boolean         @default(true) @map("is_active")
+  helpfulCount     Int             @default(0) @map("helpful_count")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+
+  knowledgeBase KnowledgeBase? @relation(fields: [knowledgeBaseId], references: [id])
+
+  @@index([category])
+  @@index([isActive])
+  @@index([embeddingStatus])
+  @@map("faq_contents")
+}
+
+model KnowledgeBase {
+  id                String   @id @default(cuid())
+  name              String   @unique
+  description       String?  @db.Text
+  pineconeNamespace String?  @map("pinecone_namespace")
+  embeddingModel    String   @default("text-embedding-3-small") @map("embedding_model")
+  isActive          Boolean  @default(true) @map("is_active")
+  isDefault         Boolean  @default(false) @map("is_default")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  documents   KnowledgeDocument[]
+  faqContents FaqContent[]
+
+  @@map("knowledge_bases")
+}
+
+model KnowledgeDocument {
+  id              String             @id @default(cuid())
+  knowledgeBaseId String             @map("knowledge_base_id")
+  title           String
+  sourceType      DocumentSourceType @map("source_type")
+  sourceFileKey   String?            @map("source_file_key")
+  content         String             @db.Text
+  contentHash     String             @map("content_hash")
+  chunkCount      Int                @default(0) @map("chunk_count")
+  embeddingStatus EmbeddingStatus    @default(PENDING) @map("embedding_status")
+  lastEmbeddedAt  DateTime?          @map("last_embedded_at")
+  errorMessage    String?            @map("error_message")
+  isActive        Boolean            @default(true) @map("is_active")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  knowledgeBase KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
+
+  @@index([knowledgeBaseId])
+  @@index([embeddingStatus])
+  @@map("knowledge_documents")
+}
+
+model ChatbotConfig {
+  id                   String   @id @default("default")
+  isEnabled            Boolean  @default(true) @map("is_enabled")
+  welcomeMessage       String   @default("Hello! How can I help you today?") @map("welcome_message")
+  fallbackMessage      String   @default("Sorry, I'm having trouble right now. Please try again in a moment.") @map("fallback_message")
+  primaryModel         String   @default("nvidia/nemotron-3-nano-30b-a3b:free") @map("primary_model")
+  fallbackModel        String   @default("arcee-ai/trinity-mini:free") @map("fallback_model")
+  temperature          Float    @default(0.3)
+  maxTokens            Int      @default(1024) @map("max_tokens")
+  rateLimitPerMinute   Int      @default(20) @map("rate_limit_per_minute")
+  allowAnonymous       Boolean  @default(true) @map("allow_anonymous")
+  enableFeedback       Boolean  @default(true) @map("enable_feedback")
+  customInstructions   String?  @map("custom_instructions") @db.Text
+  widgetApiKey         String?  @unique @map("widget_api_key")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  @@map("chatbot_config")
+}
+
+model PromptTemplate {
+  id        String   @id @default(cuid())
+  name      String
+  version   Int      @default(1)
+  content   String   @db.Text
+  variables String[]
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([name, version])
+  @@map("prompt_templates")
+}

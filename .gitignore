@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Prisma
+prisma/migrations/
+
+# TypeScript build info
+*.tsbuildinfo
+vite.config.d.ts
+
+# Vite
+*.local
+
+# Coverage
+coverage/
+
+# Temporary files
+tmp/
+temp/
+
+# Claude Code
+.claude/
+
+# Personal notes (interview prep)
+docs/PROJECT-INTERVIEW-GUIDE.md
