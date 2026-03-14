@@ -1,7 +1,7 @@
 /** Admin React Query hooks */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { faqApi, kbApi, configApi, analyticsApi, reindexApi } from './api';
+import { faqApi, kbApi, configApi, analyticsApi, reindexApi, modelApi } from './api';
 
 // Query keys
 const keys = {
@@ -101,6 +101,11 @@ export function useUpdateConfig() {
 // Analytics
 export function useAnalytics() {
   return useQuery({ queryKey: keys.analytics, queryFn: analyticsApi.get });
+}
+
+// Model testing
+export function useTestModel() {
+  return useMutation({ mutationFn: modelApi.test });
 }
 
 // Reindex

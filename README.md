@@ -49,6 +49,7 @@ Open `http://localhost:5173` for the chat widget, `http://localhost:5173/#admin`
 | [Architecture](docs/ARCHITECTURE.md) | System design, RAG pipeline, service layer |
 | [Database](docs/DATABASE.md) | Schema reference, all 7 tables |
 | [Deployment](docs/DEPLOYMENT.md) | Production build, Docker, Nginx |
+| [Free Hosting](docs/FREE-HOSTING.md) | Deploy free on Vercel + Render + Neon (step-by-step) |
 | [Troubleshooting](docs/TROUBLESHOOTING.md) | Common issues and fixes |
 | [Contributing](docs/CONTRIBUTING.md) | Development workflow and code patterns |
 | [Development](DEVELOPMENT.md) | Developer notes, project conventions, key patterns |

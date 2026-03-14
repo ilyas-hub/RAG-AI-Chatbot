@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Save, RefreshCw, Zap, Shield, MessageSquare, Bot } from 'lucide-react';
-import { useConfig, useUpdateConfig, useReindex } from '../hooks';
+import { Save, RefreshCw, Zap, Shield, MessageSquare, Bot, AlertTriangle, Play, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { useConfig, useUpdateConfig, useReindex, useTestModel } from '../hooks';
 import { ModelSelector } from './model-selector';
+import { OPENROUTER_MODELS } from '../models';
 
 export function ConfigTab() {
   const { data: config, isLoading } = useConfig();
@@ -135,17 +136,24 @@ export function ConfigTab() {
       {/* Models */}
       <Section icon={Bot} title="AI Models">
         <div className="space-y-4">
+          <PaidModelWarning primaryModel={form.primaryModel} fallbackModel={form.fallbackModel} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ModelSelector
-              label="Primary Model"
-              value={form.primaryModel}
-              onChange={(v) => setForm({ ...form, primaryModel: v })}
-            />
-            <ModelSelector
-              label="Fallback Model"
-              value={form.fallbackModel}
-              onChange={(v) => setForm({ ...form, fallbackModel: v })}
-            />
+            <div className="space-y-2">
+              <ModelSelector
+                label="Primary Model"
+                value={form.primaryModel}
+                onChange={(v) => setForm({ ...form, primaryModel: v })}
+              />
+              <TestModelButton modelId={form.primaryModel} />
+            </div>
+            <div className="space-y-2">
+              <ModelSelector
+                label="Fallback Model"
+                value={form.fallbackModel}
+                onChange={(v) => setForm({ ...form, fallbackModel: v })}
+              />
+              <TestModelButton modelId={form.fallbackModel} />
+            </div>
           </div>
 
           <div className="grid grid-cols-3 gap-4">
@@ -222,6 +230,71 @@ function Section({ icon: Icon, title, children }: { icon: any; title: string; ch
         <h3 className="text-sm font-semibold">{title}</h3>
       </div>
       {children}
+    </div>
+  );
+}
+
+function PaidModelWarning({ primaryModel, fallbackModel }: { primaryModel: string; fallbackModel: string }) {
+  const hasPaid = [primaryModel, fallbackModel].some((id) => {
+    const model = OPENROUTER_MODELS.find((m) => m.id === id);
+    return model && model.tier !== 'free';
+  });
+
+  if (!hasPaid) return null;
+
+  return (
+    <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-sm text-amber-800">
+      <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-500" />
+      <span>
+        One or more selected models requires paid credits on OpenRouter. Ensure your API key has sufficient balance, or the model will fail at runtime. Use the "Test" button below to verify.
+      </span>
+    </div>
+  );
+}
+
+function TestModelButton({ modelId }: { modelId: string }) {
+  const testModel = useTestModel();
+  const [result, setResult] = useState<{ success: boolean; responseTime: number; error?: string } | null>(null);
+
+  const handleTest = () => {
+    if (!modelId) return;
+    setResult(null);
+    testModel.mutate(modelId, {
+      onSuccess: (data) => setResult(data),
+      onError: (err) => setResult({ success: false, responseTime: 0, error: err.message }),
+    });
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={handleTest}
+        disabled={!modelId || testModel.isPending}
+        className="flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted/60 transition-colors disabled:opacity-50 cursor-pointer"
+      >
+        {testModel.isPending ? (
+          <Loader2 className="h-3 w-3 animate-spin" />
+        ) : (
+          <Play className="h-3 w-3" />
+        )}
+        {testModel.isPending ? 'Testing...' : 'Test'}
+      </button>
+      {result && (
+        <span className={`flex items-center gap-1 text-xs ${result.success ? 'text-green-600' : 'text-red-500'}`}>
+          {result.success ? (
+            <>
+              <CheckCircle className="h-3 w-3" />
+              OK ({result.responseTime}ms)
+            </>
+          ) : (
+            <>
+              <XCircle className="h-3 w-3" />
+              {result.error}
+            </>
+          )}
+        </span>
+      )}
     </div>
   );
 }

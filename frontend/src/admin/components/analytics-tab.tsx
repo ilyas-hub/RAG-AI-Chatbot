@@ -1,4 +1,4 @@
-import { MessageSquare, Users, BarChart3, ThumbsUp, ThumbsDown, TrendingUp } from 'lucide-react';
+import { MessageSquare, Users, BarChart3, ThumbsUp, ThumbsDown, TrendingUp, Coins, Cpu } from 'lucide-react';
 import { useAnalytics } from '../hooks';
 
 export function AnalyticsTab() {
@@ -23,11 +23,12 @@ export function AnalyticsTab() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <StatCard icon={Users} label="Conversations" value={data.totalConversations} color="indigo" />
         <StatCard icon={MessageSquare} label="Messages" value={data.totalMessages} color="violet" />
         <StatCard icon={TrendingUp} label="Avg msgs/conv" value={data.avgMessagesPerConversation} color="blue" />
         <StatCard icon={BarChart3} label="Feedback total" value={data.feedbackStats.total} color="emerald" />
+        <StatCard icon={Coins} label="Total Tokens" value={data.totalTokens} color="amber" />
       </div>
 
       {/* Feedback breakdown */}
@@ -67,6 +68,36 @@ export function AnalyticsTab() {
         )}
       </div>
 
+      {/* Model Usage */}
+      {data.modelUsage.length > 0 && (
+        <div className="rounded-xl border bg-white p-5 shadow-sm space-y-3">
+          <div className="flex items-center gap-2">
+            <Cpu className="h-4 w-4 text-amber-500" />
+            <h3 className="text-sm font-semibold">Model Usage</h3>
+          </div>
+          <div className="space-y-2">
+            {data.modelUsage.map((m, i) => {
+              const maxCount = data.modelUsage[0].messageCount;
+              const pct = maxCount > 0 ? (m.messageCount / maxCount) * 100 : 0;
+              return (
+                <div key={m.modelUsed} className="flex items-center gap-3">
+                  <span className="w-5 text-xs text-muted-foreground text-right">{i + 1}</span>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium font-mono">{m.modelUsed}</span>
+                      <span className="text-xs text-muted-foreground">{m.messageCount} messages</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Top categories */}
       {data.topCategories.length > 0 && (
         <div className="rounded-xl border bg-white p-5 shadow-sm space-y-3">
@@ -102,6 +133,7 @@ const COLORS: Record<string, string> = {
   violet: 'bg-violet-50 text-violet-600',
   blue: 'bg-blue-50 text-blue-600',
   emerald: 'bg-emerald-50 text-emerald-600',
+  amber: 'bg-amber-50 text-amber-600',
 };
 
 function StatCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: number; color: string }) {

@@ -25,6 +25,14 @@ export const SubmitFeedbackSchema = v.object({
   feedbackText: v.optional(v.pipe(v.string(), v.maxLength(1000))),
 });
 
+// Model ID format: provider/model-name or provider/model-name:variant
+const modelIdRegex = /^[a-zA-Z0-9_-]+\/[a-zA-Z0-9._-]+(:[a-zA-Z0-9_-]+)?$/;
+const ModelIdValidator = v.pipe(v.string(), v.regex(modelIdRegex, 'Invalid model ID format (expected provider/model-name)'));
+
+export const TestModelSchema = v.object({
+  modelId: ModelIdValidator,
+});
+
 // ============================================================================
 // Admin
 // ============================================================================
@@ -63,8 +71,8 @@ export const UpdateChatbotConfigSchema = v.object({
   isEnabled: v.optional(v.boolean()),
   welcomeMessage: v.optional(v.pipe(v.string(), v.maxLength(1000))),
   fallbackMessage: v.optional(v.pipe(v.string(), v.maxLength(1000))),
-  primaryModel: v.optional(v.string()),
-  fallbackModel: v.optional(v.string()),
+  primaryModel: v.optional(ModelIdValidator),
+  fallbackModel: v.optional(ModelIdValidator),
   temperature: v.optional(v.pipe(v.number(), v.minValue(0), v.maxValue(2))),
   maxTokens: v.optional(v.pipe(v.number(), v.minValue(64), v.maxValue(4096))),
   rateLimitPerMinute: v.optional(v.pipe(v.number(), v.minValue(1), v.maxValue(1000))),

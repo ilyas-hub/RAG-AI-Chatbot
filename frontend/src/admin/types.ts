@@ -69,6 +69,8 @@ export interface AnalyticsData {
     total: number;
   };
   topCategories: Array<{ category: string; count: number }>;
+  totalTokens: number;
+  modelUsage: Array<{ modelUsed: string; messageCount: number }>;
 }
 
 export interface ApiResponse<T> {

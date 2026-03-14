@@ -170,4 +170,6 @@ export interface AnalyticsResponse {
     total: number;
   };
   topCategories: Array<{ category: string; count: number }>;
+  totalTokens: number;
+  modelUsage: Array<{ modelUsed: string; messageCount: number }>;
 }

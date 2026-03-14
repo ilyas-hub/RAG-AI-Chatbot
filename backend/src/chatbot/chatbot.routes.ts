@@ -66,6 +66,9 @@ router.post('/admin/faq/sync', requireAdmin(), chatbotAdminController.syncFaqs);
 router.get('/admin/config', requireAdmin(), chatbotAdminController.getFullConfig);
 router.put('/admin/config', requireAdmin(), chatbotAdminController.updateConfig);
 
+// Model testing
+router.post('/admin/test-model', requireAdmin(), chatbotAdminController.testModel);
+
 // Analytics
 router.get('/admin/analytics', requireAdmin(), chatbotAdminController.getAnalytics);
 

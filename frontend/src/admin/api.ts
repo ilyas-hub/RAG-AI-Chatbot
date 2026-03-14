@@ -73,6 +73,15 @@ export const configApi = {
     adminFetch<ChatbotConfig>('/config', { method: 'PUT', body: JSON.stringify(data) }),
 };
 
+// Model testing
+export const modelApi = {
+  test: (modelId: string) =>
+    adminFetch<{ success: boolean; modelId: string; responseTime: number; error?: string }>('/test-model', {
+      method: 'POST',
+      body: JSON.stringify({ modelId }),
+    }),
+};
+
 // Analytics
 export const analyticsApi = {
   get: () => adminFetch<AnalyticsData>('/analytics'),

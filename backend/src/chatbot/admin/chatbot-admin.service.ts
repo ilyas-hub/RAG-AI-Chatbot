@@ -10,10 +10,12 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
+import { generateText } from 'ai';
 import { chatbotDb } from '../adapters/database.adapter';
 import { invalidateApiKeyConfigCache } from '../adapters/auth.adapter';
 import { invalidateChatbotConfigCache } from '../chatbot.service';
 import { ingestionService } from '../services/ingestion.service';
+import { getOpenRouterModel } from '@/providers/openrouter';
 import { config } from '@/config';
 import { logger } from '@/shared/utils/logger';
 import { NotFoundError, ConflictError } from '@/shared/utils/errors';
@@ -28,6 +30,29 @@ import type {
 } from '../chatbot.types';
 
 export class ChatbotAdminService {
+  // ============================================================================
+  // Model Testing
+  // ============================================================================
+
+  async testModel(modelId: string): Promise<{ success: boolean; modelId: string; responseTime: number; error?: string }> {
+    const start = Date.now();
+    try {
+      await generateText({
+        model: getOpenRouterModel(modelId),
+        prompt: 'Say "ok".',
+        maxOutputTokens: 5,
+      });
+      return { success: true, modelId, responseTime: Date.now() - start };
+    } catch (err: any) {
+      const status = err?.status || err?.statusCode || err?.data?.error?.code;
+      let error = err?.message || 'Unknown error';
+      if (status === 402) error = 'No credits — your API key cannot access this paid model';
+      else if (status === 404) error = 'Model not found on OpenRouter';
+      else if (status === 401) error = 'Invalid or missing API key';
+      return { success: false, modelId, responseTime: Date.now() - start, error };
+    }
+  }
+
   // ============================================================================
   // Knowledge Base Management
   // ============================================================================
@@ -413,7 +438,7 @@ export class ChatbotAdminService {
   async getAnalytics(): Promise<AnalyticsResponse> {
     const prisma = chatbotDb.getClient();
 
-    const [totalConversations, totalMessages, feedbackStats, categoryStats] = await Promise.all([
+    const [totalConversations, totalMessages, feedbackStats, categoryStats, tokenAgg, modelUsageRaw] = await Promise.all([
       prisma.chatConversation.count(),
       prisma.chatMessage.count(),
       prisma.chatMessage.groupBy({
@@ -428,6 +453,17 @@ export class ChatbotAdminService {
         where: { isActive: true },
         _count: { _all: true },
         orderBy: { _count: { category: 'desc' } },
+        take: 10,
+      }),
+      prisma.chatMessage.aggregate({
+        _sum: { tokenCount: true },
+        where: { role: 'ASSISTANT' },
+      }),
+      prisma.chatMessage.groupBy({
+        by: ['modelUsed'],
+        where: { modelUsed: { not: null } },
+        _count: true,
+        orderBy: { _count: { modelUsed: 'desc' } },
         take: 10,
       }),
     ]);
@@ -450,6 +486,11 @@ export class ChatbotAdminService {
       topCategories: categoryStats.map((c) => ({
         category: c.category,
         count: c._count._all,
+      })),
+      totalTokens: tokenAgg._sum.tokenCount || 0,
+      modelUsage: modelUsageRaw.map((m) => ({
+        modelUsed: m.modelUsed as string,
+        messageCount: m._count,
       })),
     };
   }

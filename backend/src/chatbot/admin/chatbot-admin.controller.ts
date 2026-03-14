@@ -12,6 +12,7 @@ import {
   UpdateKnowledgeBaseSchema,
   UpdateChatbotConfigSchema,
   UploadDocumentSchema,
+  TestModelSchema,
 } from '../chatbot.validation';
 import { success } from '@/shared/utils/response';
 
@@ -166,6 +167,20 @@ export class ChatbotAdminController {
       const dto = parse(UpdateChatbotConfigSchema, req.body);
       const config = await chatbotAdminService.updateConfig(dto);
       res.json(success(config));
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // ============================================================================
+  // Model Testing
+  // ============================================================================
+
+  testModel = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { modelId } = parse(TestModelSchema, req.body);
+      const result = await chatbotAdminService.testModel(modelId);
+      res.json(success(result));
     } catch (error) {
       next(error);
     }
